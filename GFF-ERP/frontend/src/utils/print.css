@@ -1,0 +1,246 @@
+/* ============================================ */
+/* GFF ERP - Print Styles for Financial Reports */
+/* ============================================ */
+
+@media print {
+  body {
+    font-family: 'Arial', sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+  }
+
+  /* Hide navigation, buttons, and non-print elements */
+  nav,
+  .MuiAppBar-root,
+  .MuiDrawer-root,
+  .MuiButton-root,
+  .MuiTabs-root,
+  .MuiIconButton-root,
+  .MuiChip-root,
+  .MuiPagination-root,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Card styling for print */
+  .MuiCard-root {
+    box-shadow: none !important;
+    border: 1px solid #ccc;
+    margin-bottom: 12pt;
+    break-inside: avoid;
+  }
+
+  /* Table print styles */
+  .MuiTable-root {
+    font-size: 9pt;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .MuiTableCell-root {
+    padding: 4pt 6pt;
+    border: 1px solid #ccc;
+    text-align: left;
+  }
+
+  .MuiTableCell-alignRight {
+    text-align: right;
+  }
+
+  .MuiTableCell-alignCenter {
+    text-align: center;
+  }
+
+  .MuiTableHead-root .MuiTableCell-root {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  .MuiTableRow-root {
+    break-inside: avoid;
+  }
+
+  /* Typography */
+  .MuiTypography-h4 {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 8pt;
+  }
+
+  .MuiTypography-h5 {
+    font-size: 13pt;
+    font-weight: bold;
+    margin-bottom: 6pt;
+  }
+
+  .MuiTypography-h6 {
+    font-size: 11pt;
+    font-weight: bold;
+    margin-bottom: 4pt;
+  }
+
+  /* Grid layout for print */
+  .MuiGrid-root {
+    display: block;
+    width: 100%;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .page-break-inside {
+    page-break-inside: avoid;
+  }
+
+  /* Report title styling */
+  .report-title {
+    text-align: center;
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 4pt;
+  }
+
+  .report-subtitle {
+    text-align: center;
+    font-size: 10pt;
+    color: #555;
+    margin-bottom: 12pt;
+  }
+
+  /* Financial report sections */
+  .report-section {
+    margin-bottom: 12pt;
+    break-inside: avoid;
+  }
+
+  .report-section-header {
+    background-color: #f0f0f0;
+    padding: 4pt 8pt;
+    font-weight: bold;
+    border: 1px solid #ccc;
+  }
+
+  .report-total-row {
+    background-color: #e8e8e8;
+    font-weight: bold;
+    border-top: 2px solid #000;
+  }
+
+  .report-grand-total {
+    background-color: #d0d0d0;
+    font-weight: bold;
+    border: 2px solid #000;
+    padding: 6pt;
+  }
+
+  /* Ledger specific */
+  .ledger-opening {
+    background-color: #ffffe0 !important;
+    font-style: italic;
+  }
+
+  .ledger-closing {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+    border-top: 2px solid #000;
+  }
+
+  /* Color coding for chart of accounts */
+  .account-asset {
+    color: #2e7d32;
+  }
+
+  .account-liability {
+    color: #c62828;
+  }
+
+  .account-equity {
+    color: #1565c0;
+  }
+
+  .account-revenue {
+    color: #ef6c00;
+  }
+
+  .account-expense {
+    color: #6a1b9a;
+  }
+
+  /* Status badges for print */
+  .status-print {
+    border: 1px solid #999;
+    padding: 1pt 4pt;
+    font-size: 8pt;
+    border-radius: 2pt;
+  }
+
+  .status-print-active,
+  .status-print-posted {
+    background-color: #e8f5e9;
+    border-color: #4caf50;
+  }
+
+  .status-print-draft,
+  .status-print-pending {
+    background-color: #fff8e1;
+    border-color: #ffc107;
+  }
+
+  .status-print-cancelled,
+  .status-print-reversed {
+    background-color: #ffebee;
+    border-color: #f44336;
+  }
+
+  /* Summary cards */
+  .summary-card {
+    border: 1px solid #ccc;
+    padding: 8pt;
+    margin-bottom: 8pt;
+    break-inside: avoid;
+  }
+
+  .summary-label {
+    font-size: 8pt;
+    color: #555;
+  }
+
+  .summary-value {
+    font-size: 12pt;
+    font-weight: bold;
+  }
+
+  /* Form elements should not appear in print */
+  input,
+  select,
+  textarea,
+  .MuiInputBase-root,
+  .MuiFormControl-root {
+    display: none !important;
+  }
+
+  /* Ensure charts print properly */
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Print header/footer */
+  @page {
+    margin: 15mm;
+  }
+
+  /* Remove box shadows and transitions */
+  * {
+    box-shadow: none !important;
+    transition: none !important;
+  }
+}

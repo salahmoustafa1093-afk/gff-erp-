@@ -1,0 +1,1017 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE MODULES
+// ============================================
+
+model CompanySetting {
+  id                      Int      @id @default(autoincrement())
+  companyName             String   @map("company_name")
+  tradeName               String   @map("trade_name")
+  taxId                   String?  @map("tax_id")
+  commercialRegistration  String?  @map("commercial_registration")
+  email                   String?
+  phone                   String?
+  address                 String?
+  city                    String?
+  country                 String   @default("Egypt")
+  currency                String   @default("EGP")
+  currencySymbol          String?  @map("currency_symbol")
+  fiscalYearStart         DateTime @map("fiscal_year_start")
+  fiscalYearEnd           DateTime @map("fiscal_year_end")
+  defaultTaxRate          Decimal  @default(14.00) @map("default_tax_rate") @db.Decimal(5, 2)
+  logo                    String?
+  website                 String?
+  defaultLanguage         String   @default("ar") @map("default_language")
+  dateFormat              String   @default("DD/MM/YYYY") @map("date_format")
+  timeZone                String   @default("Africa/Cairo") @map("time_zone")
+  lowStockAlertDays       Int      @default(7) @map("low_stock_alert_days")
+  autoBackupEnabled       Boolean  @default(true) @map("auto_backup_enabled")
+  backupFrequency         String   @default("DAILY") @map("backup_frequency")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@map("company_settings")
+}
+
+model Branch {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  name          String
+  nameEn        String?   @map("name_en")
+  address       String?
+  city          String?
+  country       String    @default("Egypt")
+  phone         String?
+  email         String?
+  isMain        Boolean   @default(false) @map("is_main")
+  isActive      Boolean   @default(true) @map("is_active")
+  managerName   String?   @map("manager_name")
+  latitude      Decimal?  @db.Decimal(10, 8)
+  longitude     Decimal?  @db.Decimal(11, 8)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  users                 User[]
+  warehouses            Warehouse[]
+  products              Product[]
+  customers             Customer[]
+  suppliers             Supplier[]
+  salesInvoices         SalesInvoice[]
+  salesReturns          SalesReturn[]
+  purchaseInvoices      PurchaseInvoice[]
+  purchaseReturns       PurchaseReturn[]
+  journalEntries        JournalEntry[]
+  chartOfAccounts       ChartOfAccount[]
+  costCenters           CostCenter[]
+  fixedAssets           FixedAsset[]
+  employees             Employee[]
+  vehicles              Vehicle[]
+  trips                 Trip[]
+  feedFormulas          FeedFormula[]
+  productionOrders      ProductionOrder[]
+  barns                 Barn[]
+  flocks                Flock[]
+  eggCollections        EggCollection[]
+  leads                 Lead[]
+  activities            Activity[]
+  bankAccounts          BankAccount[]
+  cashboxes             Cashbox[]
+  treasuryTransactions  TreasuryTransaction[]
+  stockMovements        StockMovement[]
+
+  @@map("branches")
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  password        String
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  phone           String?
+  avatar          String?
+  isActive        Boolean   @default(true) @map("is_active")
+  emailVerified   Boolean   @default(false) @map("email_verified")
+  roleId          Int       @map("role_id")
+  branchId        Int       @map("branch_id")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  role          Role           @relation(fields: [roleId], references: [id])
+  branch        Branch         @relation(fields: [branchId], references: [id])
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Role {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  name          String
+  nameEn        String?   @map("name_en")
+  level         Int       @default(0)
+  description   String?
+  isSystem      Boolean   @default(false) @map("is_system")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id            Int       @id @default(autoincrement())
+  module        String
+  action        String
+  description   String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            Int       @id @default(autoincrement())
+  roleId        Int       @map("role_id")
+  permissionId  Int       @map("permission_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  role        Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission  Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================
+// INVENTORY
+// ============================================
+
+model Warehouse {
+  id            Int       @id @default(autoincrement())
+  code          String
+  name          String
+  nameEn        String?   @map("name_en")
+  address       String?
+  isMain        Boolean   @default(false) @map("is_main")
+  isActive      Boolean   @default(true) @map("is_active")
+  branchId      Int       @map("branch_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  branch          Branch[]         @relation(name: "WarehouseBranch")
+  stockMovements  StockMovement[]
+
+  @@unique([code, branchId])
+  @@map("warehouses")
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  code          String
+  nameAr        String    @map("name_ar")
+  nameEn        String?   @map("name_en")
+  description   String?
+  type          String    @default("FINISHED_GOOD")
+  barcode       String?
+  sku           String?
+  unitId        Int       @map("unit_id")
+  categoryId    Int?      @map("category_id")
+  brandId       Int?      @map("brand_id")
+  purchasePrice Decimal?  @map("purchase_price") @db.Decimal(18, 4)
+  salePrice     Decimal?  @map("sale_price") @db.Decimal(18, 4)
+  costPrice     Decimal?  @map("cost_price") @db.Decimal(18, 4)
+  minStock      Decimal   @default(0) @map("min_stock") @db.Decimal(18, 4)
+  maxStock      Decimal?  @map("max_stock") @db.Decimal(18, 4)
+  currentStock  Decimal   @default(0) @map("current_stock") @db.Decimal(18, 4)
+  isActive      Boolean   @default(true) @map("is_active")
+  trackExpiry   Boolean   @default(false) @map("track_expiry")
+  trackBatch    Boolean   @default(false) @map("track_batch")
+  branchId      Int       @map("branch_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  branch        Branch          @relation(fields: [branchId], references: [id])
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  brand         Brand?          @relation(fields: [brandId], references: [id])
+  unit          Unit            @relation(fields: [unitId], references: [id])
+  stockMovements StockMovement[]
+
+  @@unique([code, branchId])
+  @@map("products")
+}
+
+model Category {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  name          String
+  nameEn        String?   @map("name_en")
+  description   String?
+  parentId      Int?      @map("parent_id")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  parent    Category?   @relation("CategoryParent", fields: [parentId], references: [id])
+  children  Category[]  @relation("CategoryParent")
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  name          String
+  nameEn        String?   @map("name_en")
+  description   String?
+  logo          String?
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Unit {
+  id                Int       @id @default(autoincrement())
+  code              String    @unique
+  name              String
+  nameEn            String?   @map("name_en")
+  symbol            String
+  conversionFactor  Decimal   @map("conversion_factor") @db.Decimal(18, 6)
+  isBaseUnit        Boolean   @default(false) @map("is_base_unit")
+  isActive          Boolean   @default(true) @map("is_active")
+  branchId          Int?      @map("branch_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@map("units")
+}
+
+model StockMovement {
+  id              Int       @id @default(autoincrement())
+  documentType    String    @map("document_type")
+  documentId      Int       @map("document_id")
+  documentNumber  String    @map("document_number")
+  productId       Int       @map("product_id")
+  warehouseId     Int?      @map("warehouse_id")
+  quantity        Decimal   @db.Decimal(18, 4)
+  unitCost        Decimal?  @map("unit_cost") @db.Decimal(18, 4)
+  movementType    String    @map("movement_type")
+  notes           String?
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  product    Product    @relation(fields: [productId], references: [id])
+  warehouse  Warehouse? @relation(fields: [warehouseId], references: [id])
+  branch     Branch     @relation(fields: [branchId], references: [id])
+
+  @@map("stock_movements")
+}
+
+// ============================================
+// SALES
+// ============================================
+
+model SalesInvoice {
+  id              Int       @id @default(autoincrement())
+  documentNumber  String    @map("document_number")
+  customerId      Int       @map("customer_id")
+  branchId        Int       @map("branch_id")
+  invoiceDate     DateTime  @map("invoice_date")
+  dueDate         DateTime? @map("due_date")
+  subTotal        Decimal   @map("sub_total") @db.Decimal(18, 2)
+  discountAmount  Decimal   @default(0) @map("discount_amount") @db.Decimal(18, 2)
+  taxRate         Decimal   @default(14) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount       Decimal   @map("tax_amount") @db.Decimal(18, 2)
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(18, 2)
+  paidAmount      Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  status          String    @default("DRAFT")
+  paymentStatus   String    @default("UNPAID") @map("payment_status")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  customer  Customer  @relation(fields: [customerId], references: [id])
+  branch    Branch    @relation(fields: [branchId], references: [id])
+
+  @@map("sales_invoices")
+}
+
+model SalesReturn {
+  id              Int       @id @default(autoincrement())
+  documentNumber  String    @map("document_number")
+  salesInvoiceId  Int       @map("sales_invoice_id")
+  customerId      Int       @map("customer_id")
+  branchId        Int       @map("branch_id")
+  returnDate      DateTime  @map("return_date")
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(18, 2)
+  reason          String?
+  status          String    @default("DRAFT")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch    Branch    @relation(fields: [branchId], references: [id])
+
+  @@map("sales_returns")
+}
+
+model Customer {
+  id            Int       @id @default(autoincrement())
+  code          String
+  name          String
+  nameEn        String?   @map("name_en")
+  tradeName     String?   @map("trade_name")
+  taxId         String?   @map("tax_id")
+  email         String?
+  phone         String?
+  phone2        String?
+  address       String?
+  city          String?
+  country       String    @default("Egypt")
+  creditLimit   Decimal?  @map("credit_limit") @db.Decimal(18, 2)
+  balance       Decimal   @default(0) @db.Decimal(18, 2)
+  customerType  String    @default("RETAIL") @map("customer_type")
+  isActive      Boolean   @default(true) @map("is_active")
+  branchId      Int       @map("branch_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  branch        Branch          @relation(fields: [branchId], references: [id])
+  salesInvoices SalesInvoice[]
+
+  @@unique([code, branchId])
+  @@map("customers")
+}
+
+// ============================================
+// PURCHASING
+// ============================================
+
+model PurchaseInvoice {
+  id              Int       @id @default(autoincrement())
+  documentNumber  String    @map("document_number")
+  supplierId      Int       @map("supplier_id")
+  branchId        Int       @map("branch_id")
+  invoiceDate     DateTime  @map("invoice_date")
+  dueDate         DateTime? @map("due_date")
+  subTotal        Decimal   @map("sub_total") @db.Decimal(18, 2)
+  discountAmount  Decimal   @default(0) @map("discount_amount") @db.Decimal(18, 2)
+  taxRate         Decimal   @default(14) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount       Decimal   @map("tax_amount") @db.Decimal(18, 2)
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(18, 2)
+  paidAmount      Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  status          String    @default("DRAFT")
+  paymentStatus   String    @default("UNPAID") @map("payment_status")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  supplier  Supplier  @relation(fields: [supplierId], references: [id])
+  branch    Branch    @relation(fields: [branchId], references: [id])
+
+  @@map("purchase_invoices")
+}
+
+model PurchaseReturn {
+  id              Int       @id @default(autoincrement())
+  documentNumber  String    @map("document_number")
+  purchaseInvoiceId Int     @map("purchase_invoice_id")
+  supplierId      Int       @map("supplier_id")
+  branchId        Int       @map("branch_id")
+  returnDate      DateTime  @map("return_date")
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(18, 2)
+  reason          String?
+  status          String    @default("DRAFT")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("purchase_returns")
+}
+
+model Supplier {
+  id            Int       @id @default(autoincrement())
+  code          String
+  name          String
+  nameEn        String?   @map("name_en")
+  tradeName     String?   @map("trade_name")
+  taxId         String?   @map("tax_id")
+  email         String?
+  phone         String?
+  phone2        String?
+  address       String?
+  city          String?
+  country       String    @default("Egypt")
+  creditLimit   Decimal?  @map("credit_limit") @db.Decimal(18, 2)
+  balance       Decimal   @default(0) @db.Decimal(18, 2)
+  supplierType  String    @default("LOCAL") @map("supplier_type")
+  isActive      Boolean   @default(true) @map("is_active")
+  branchId      Int       @map("branch_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  branch            Branch            @relation(fields: [branchId], references: [id])
+  purchaseInvoices  PurchaseInvoice[]
+
+  @@unique([code, branchId])
+  @@map("suppliers")
+}
+
+// ============================================
+// TREASURY
+// ============================================
+
+model BankAccount {
+  id              Int       @id @default(autoincrement())
+  accountName     String    @map("account_name")
+  bankName        String    @map("bank_name")
+  accountNumber   String    @map("account_number")
+  iban            String?
+  swiftCode       String?   @map("swift_code")
+  branchName      String?   @map("branch_name")
+  currency        String    @default("EGP")
+  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(18, 2)
+  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(18, 2)
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  treasuryTransactions  TreasuryTransaction[]
+
+  @@map("bank_accounts")
+}
+
+model Cashbox {
+  id              Int       @id @default(autoincrement())
+  code            String
+  name            String
+  location        String?
+  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(18, 2)
+  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(18, 2)
+  maxLimit        Decimal?  @map("max_limit") @db.Decimal(18, 2)
+  currency        String    @default("EGP")
+  isMain          Boolean   @default(false) @map("is_main")
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  treasuryTransactions  TreasuryTransaction[]
+
+  @@unique([code, branchId])
+  @@map("cashboxes")
+}
+
+model TreasuryTransaction {
+  id              Int       @id @default(autoincrement())
+  documentNumber  String    @map("document_number")
+  transactionType String    @map("transaction_type")
+  amount          Decimal   @db.Decimal(18, 2)
+  currency        String    @default("EGP")
+  exchangeRate    Decimal   @default(1) @map("exchange_rate") @db.Decimal(18, 6)
+  description     String?
+  referenceNumber String?   @map("reference_number")
+  bankAccountId   Int?      @map("bank_account_id")
+  cashboxId       Int?      @map("cashbox_id")
+  entityType      String?   @map("entity_type")
+  entityId        Int?      @map("entity_id")
+  isReconciled    Boolean   @default(false) @map("is_reconciled")
+  transactionDate DateTime  @map("transaction_date")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
+  cashbox     Cashbox?     @relation(fields: [cashboxId], references: [id])
+  branch      Branch       @relation(fields: [branchId], references: [id])
+
+  @@map("treasury_transactions")
+}
+
+// ============================================
+// ACCOUNTING
+// ============================================
+
+model ChartOfAccount {
+  id              Int       @id @default(autoincrement())
+  code            String
+  nameAr          String    @map("name_ar")
+  nameEn          String?   @map("name_en")
+  type            String    // ASSET, LIABILITY, EQUITY, REVENUE, COGS, EXPENSE
+  category        String    // CURRENT, FIXED, LONG_TERM, CAPITAL, OPERATING, etc.
+  level           Int       @default(1)
+  parentCode      String?   @map("parent_code")
+  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(18, 2)
+  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(18, 2)
+  isActive        Boolean   @default(true) @map("is_active")
+  isSystem        Boolean   @default(false) @map("is_system")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch        Branch          @relation(fields: [branchId], references: [id])
+  journalLines  JournalLine[]
+
+  @@unique([code, branchId])
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id              Int       @id @default(autoincrement())
+  entryNumber     String    @map("entry_number")
+  entryDate       DateTime  @map("entry_date")
+  referenceType   String?   @map("reference_type")
+  referenceId     Int?      @map("reference_id")
+  description     String
+  totalDebits     Decimal   @map("total_debits") @db.Decimal(18, 2)
+  totalCredits    Decimal   @map("total_credits") @db.Decimal(18, 2)
+  isPosted        Boolean   @default(false) @map("is_posted")
+  postedAt        DateTime? @map("posted_at")
+  status          String    @default("DRAFT")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch        @relation(fields: [branchId], references: [id])
+  lines   JournalLine[]
+
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id            Int       @id @default(autoincrement())
+  journalEntryId Int      @map("journal_entry_id")
+  accountId     Int       @map("account_id")
+  description   String?
+  debit         Decimal   @default(0) @db.Decimal(18, 2)
+  credit        Decimal   @default(0) @db.Decimal(18, 2)
+  costCenterId  Int?      @map("cost_center_id")
+  lineOrder     Int       @map("line_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  journalEntry  JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account       ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@map("journal_lines")
+}
+
+model CostCenter {
+  id            Int       @id @default(autoincrement())
+  code          String
+  name          String
+  nameEn        String?   @map("name_en")
+  description   String?
+  budgetAmount  Decimal?  @map("budget_amount") @db.Decimal(18, 2)
+  isActive      Boolean   @default(true) @map("is_active")
+  branchId      Int       @map("branch_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@unique([code, branchId])
+  @@map("cost_centers")
+}
+
+model FixedAsset {
+  id              Int       @id @default(autoincrement())
+  assetCode       String    @map("asset_code")
+  name            String
+  description     String?
+  assetType       String    @map("asset_type")
+  acquisitionDate DateTime  @map("acquisition_date")
+  acquisitionCost Decimal   @map("acquisition_cost") @db.Decimal(18, 2)
+  salvageValue    Decimal   @default(0) @map("salvage_value") @db.Decimal(18, 2)
+  usefulLifeYears Int       @map("useful_life_years")
+  depreciationMethod String @default("STRAIGHT_LINE") @map("depreciation_method")
+  accumulatedDepreciation Decimal @default(0) @map("accumulated_depreciation") @db.Decimal(18, 2)
+  netBookValue    Decimal   @map("net_book_value") @db.Decimal(18, 2)
+  location        String?
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("fixed_assets")
+}
+
+// ============================================
+// HR
+// ============================================
+
+model Employee {
+  id                Int       @id @default(autoincrement())
+  employeeCode      String    @map("employee_code")
+  firstName         String    @map("first_name")
+  lastName          String    @map("last_name")
+  email             String?
+  phone             String?
+  nationalId        String?   @map("national_id")
+  dateOfBirth       DateTime? @map("date_of_birth")
+  hireDate          DateTime  @map("hire_date")
+  terminationDate   DateTime? @map("termination_date")
+  jobTitle          String?   @map("job_title")
+  department        String?
+  employmentType    String    @default("FULL_TIME") @map("employment_type")
+  basicSalary       Decimal   @map("basic_salary") @db.Decimal(18, 2)
+  grossSalary       Decimal   @map("gross_salary") @db.Decimal(18, 2)
+  netSalary         Decimal   @map("net_salary") @db.Decimal(18, 2)
+  socialInsuranceNumber String? @map("social_insurance_number")
+  taxNumber         String?   @map("tax_number")
+  bankAccountNumber String?   @map("bank_account_number")
+  bankName          String?   @map("bank_name")
+  emergencyContact  String?   @map("emergency_contact")
+  address           String?
+  gender            String?
+  maritalStatus     String?   @map("marital_status")
+  educationLevel    String?   @map("education_level")
+  isActive          Boolean   @default(true) @map("is_active")
+  branchId          Int       @map("branch_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@unique([employeeCode, branchId])
+  @@map("employees")
+}
+
+model LeaveType {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  name          String
+  nameEn        String?   @map("name_en")
+  description   String?
+  isPaid        Boolean   @default(true) @map("is_paid")
+  defaultDays   Int       @map("default_days")
+  maxDays       Int       @map("max_days")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("leave_types")
+}
+
+// ============================================
+// LOGISTICS
+// ============================================
+
+model Vehicle {
+  id              Int       @id @default(autoincrement())
+  vehicleCode     String    @map("vehicle_code")
+  plateNumber     String    @map("plate_number")
+  make            String?
+  model           String?
+  year            Int?
+  color           String?
+  vin             String?   @unique
+  engineNumber    String?   @map("engine_number")
+  vehicleType     String    @default("TRUCK") @map("vehicle_type")
+  capacityKg      Decimal?  @map("capacity_kg") @db.Decimal(18, 2)
+  fuelType        String?   @map("fuel_type")
+  currentMileage  Decimal   @default(0) @map("current_mileage") @db.Decimal(18, 2)
+  purchaseDate    DateTime? @map("purchase_date")
+  purchasePrice   Decimal?  @map("purchase_price") @db.Decimal(18, 2)
+  isOwned         Boolean   @default(true) @map("is_owned")
+  status          String    @default("ACTIVE")
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  trips   Trip[]
+
+  @@map("vehicles")
+}
+
+model Trip {
+  id              Int       @id @default(autoincrement())
+  tripNumber      String    @map("trip_number")
+  vehicleId       Int       @map("vehicle_id")
+  driverId        Int?      @map("driver_id")
+  routeFrom       String    @map("route_from")
+  routeTo         String    @map("route_to")
+  departureTime   DateTime? @map("departure_time")
+  arrivalTime     DateTime? @map("arrival_time")
+  distanceKm      Decimal?  @map("distance_km") @db.Decimal(18, 2)
+  fuelConsumed    Decimal?  @map("fuel_consumed") @db.Decimal(18, 2)
+  status          String    @default("SCHEDULED")
+  notes           String?
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("trips")
+}
+
+// ============================================
+// PRODUCTION
+// ============================================
+
+model FeedFormula {
+  id              Int       @id @default(autoincrement())
+  formulaCode     String    @map("formula_code")
+  name            String
+  nameEn          String?   @map("name_en")
+  animalType      String    @map("animal_type")
+  productionStage String?   @map("production_stage")
+  description     String?
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("feed_formulas")
+}
+
+model ProductionOrder {
+  id              Int       @id @default(autoincrement())
+  orderNumber     String    @map("order_number")
+  formulaId       Int?      @map("formula_id")
+  plannedQuantity Decimal   @map("planned_quantity") @db.Decimal(18, 4)
+  actualQuantity  Decimal?  @map("actual_quantity") @db.Decimal(18, 4)
+  plannedDate     DateTime  @map("planned_date")
+  startDate       DateTime? @map("start_date")
+  completionDate  DateTime? @map("completion_date")
+  status          String    @default("PLANNED")
+  notes           String?
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("production_orders")
+}
+
+// ============================================
+// POULTRY
+// ============================================
+
+model Barn {
+  id              Int       @id @default(autoincrement())
+  barnCode        String    @map("barn_code")
+  name            String
+  barnType        String    @map("barn_type")
+  capacity        Int
+  currentCount    Int       @default(0) @map("current_count")
+  area            Decimal?  @db.Decimal(18, 2)
+  temperature     Decimal?  @db.Decimal(5, 2)
+  humidity        Decimal?  @db.Decimal(5, 2)
+  ventilationType String?   @map("ventilation_type")
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  flocks  Flock[]
+
+  @@unique([barnCode, branchId])
+  @@map("barns")
+}
+
+model Flock {
+  id              Int       @id @default(autoincrement())
+  flockNumber     String    @map("flock_number")
+  barnId          Int       @map("barn_id")
+  chickType       String    @map("chick_type")
+  receivedDate    DateTime  @map("received_date")
+  initialCount    Int       @map("initial_count")
+  currentCount    Int       @map("current_count")
+  mortalityCount  Int       @default(0) @map("mortality_count")
+  culledCount     Int       @default(0) @map("culled_count")
+  ageDays         Int       @default(0) @map("age_days")
+  averageWeight   Decimal?  @map("average_weight") @db.Decimal(10, 4)
+  feedConsumptionKg Decimal @default(0) @map("feed_consumption_kg") @db.Decimal(18, 4)
+  status          String    @default("ACTIVE")
+  expectedEndDate DateTime? @map("expected_end_date")
+  notes           String?
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  barn          Barn            @relation(fields: [barnId], references: [id])
+  branch        Branch          @relation(fields: [branchId], references: [id])
+  eggCollections EggCollection[]
+
+  @@map("flocks")
+}
+
+model EggCollection {
+  id              Int       @id @default(autoincrement())
+  collectionDate  DateTime  @map("collection_date")
+  flockId         Int       @map("flock_id")
+  totalEggs       Int       @map("total_eggs")
+  gradeA          Int       @default(0) @map("grade_a")
+  gradeB          Int       @default(0) @map("grade_b")
+  gradeC          Int       @default(0) @map("grade_c")
+  broken          Int       @default(0)
+  dirty           Int       @default(0)
+  productionRate  Decimal?  @map("production_rate") @db.Decimal(5, 2)
+  temperature     Decimal?  @db.Decimal(5, 2)
+  humidity        Decimal?  @db.Decimal(5, 2)
+  notes           String?
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  flock   Flock   @relation(fields: [flockId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("egg_collections")
+}
+
+// ============================================
+// CRM
+// ============================================
+
+model Lead {
+  id              Int       @id @default(autoincrement())
+  leadCode        String    @map("lead_code")
+  companyName     String    @map("company_name")
+  contactName     String    @map("contact_name")
+  email           String?
+  phone           String?
+  phone2          String?
+  address         String?
+  city            String?
+  country         String    @default("Egypt")
+  leadSource      String?   @map("lead_source")
+  leadStatus      String    @default("NEW") @map("lead_status")
+  estimatedValue  Decimal?  @map("estimated_value") @db.Decimal(18, 2)
+  probability     Decimal?  @db.Decimal(5, 2)
+  expectedCloseDate DateTime? @map("expected_close_date")
+  assignedTo      String?   @map("assigned_to")
+  notes           String?
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@unique([leadCode, branchId])
+  @@map("leads")
+}
+
+model Activity {
+  id              Int       @id @default(autoincrement())
+  activityType    String    @map("activity_type")
+  subject         String
+  description     String?
+  scheduledDate   DateTime  @map("scheduled_date")
+  completedDate   DateTime? @map("completed_date")
+  status          String    @default("SCHEDULED")
+  entityType      String    @map("entity_type")
+  entityId        Int       @map("entity_id")
+  assignedTo      String?   @map("assigned_to")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("activities")
+}
+
+// ============================================
+// AUDIT & NOTIFICATIONS
+// ============================================
+
+model AuditLog {
+  id            Int       @id @default(autoincrement())
+  action        String
+  entityType    String    @map("entity_type")
+  entityId      String?   @map("entity_id")
+  oldValues     String?   @map("old_values")
+  newValues     String?   @map("new_values")
+  ipAddress     String?   @map("ip_address")
+  userAgent     String?   @map("user_agent")
+  description   String?
+  userId        Int?      @map("user_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id            Int       @id @default(autoincrement())
+  title         String
+  message       String
+  type          String    @default("INFO")
+  isRead        Boolean   @default(false) @map("is_read")
+  entityType    String?   @map("entity_type")
+  entityId      String?   @map("entity_id")
+  userId        Int       @map("user_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  readAt        DateTime? @map("read_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ============================================
+// NUMBER SEQUENCES
+// ============================================
+
+model NumberSequence {
+  id              Int       @id @default(autoincrement())
+  documentType    String    @map("document_type")
+  prefix          String
+  suffix          String    @default("")
+  currentNumber   Int       @map("current_number")
+  padding         Int       @default(6)
+  fiscalYear      String    @map("fiscal_year")
+  isActive        Boolean   @default(true) @map("is_active")
+  branchId        Int       @map("branch_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@unique([documentType, fiscalYear, branchId])
+  @@map("number_sequences")
+}
+
+model WarehouseBranch {
+  warehouseId   Int
+  branchId      Int
+
+  @@id([warehouseId, branchId])
+  @@map("warehouse_branches")
+}

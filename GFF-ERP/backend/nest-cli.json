@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": false,
+    "tsConfigPath": "tsconfig.build.json",
+    "assets": [
+      {
+        "include": "../prisma/**/*",
+        "outDir": "dist/prisma"
+      }
+    ],
+    "watchAssets": true
+  },
+  "projects": {
+    "gff-erp": {
+      "type": "application",
+      "root": "",
+      "entryFile": "main",
+      "sourceRoot": "src"
+    }
+  }
+}
